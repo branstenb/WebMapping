@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset='utf-8' />
+    <title>Watershed Restoration Projects in Oregon</title>
+    <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+    <!-- mapbox and font initialization -->
+    <script src='https://api.tiles.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js'></script>
+    <link href='https://api.tiles.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css' rel='stylesheet' />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap"
+        rel="stylesheet">
+
+    <style>
+        /*  Main description panel styling */
+        .descriptionPanel {
+            position: absolute;
+            top: 80px;
+            left: 20px;
+            z-index: 2;
+            max-width: 450px; 
+            max-height: 840px;
+            background: #efefef;
+            overflow: hidden;
+            border-radius: 7px;
+            color: black; 
+            font-family: 'Montserrat', sans-serif; 
+            padding: 10px; 
+            transition: height 0.3s ease; 
+        }
+
+        #map {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 100%;
+        }
+
+       /* style for menu buttons on the right side of page */
+        .fly {
+            display: block;
+            margin: 10px 0;
+            width: 200px;
+            padding: 11px;
+            border-style: solid;
+            border-color: ghostwhite;
+            border-radius: 12px;
+            font-size: 1em;
+            text-align: center;
+            font-weight: bold;
+            color: oldlace;
+            background: #0c30b0;
+            cursor: pointer;
+            box-sizing: border-box;
+        }
+
+        .popupImage {
+            width: 100%;
+        }
+
+        button {
+            font-family: 'Montserrat';
+            font-weight: 400;
+        }
+
+        #menu {
+            position: absolute;
+            top: 10px;
+            right: 20px;
+            background: #efefef;
+            padding: 10px;
+            border-radius: 12px;
+            font-family: 'Montserrat', sans-serif;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            width: auto;
+            z-index: 2;
+        }
+
+        #menu label {
+            margin-left: 5px;
+        }
+
+        #fly-buttons {
+            position: absolute;
+            top: 80px;
+            right: 20px;
+            background: #efefef;
+            padding: 10px;
+            border-radius: 12px;
+            font-family: 'Montserrat', sans-serif;
+            z-index: 1;
+        }
+
+        /* top left back button style */
+        .backPanel {
+            position: absolute;
+            top: 10px;
+            left: 20px;
+            z-index: 2;
+        }
+
+        #backButton {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1.2em; 
+            padding: 8px 12px; 
+            border: none;
+            border-radius: 5px;
+            background-color: #efefef;
+            color: #0c30b0;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        #backButton:hover {
+            background-color: #c0c0c0;
+        }
+    </style>
+</head>
+
+<body>
+    <!--  The map div -->
+    <div id='map'></div>
+
+    <!--  The description panel div with project summary -->
+    <div class="descriptionPanel" id="descriptionPanel" style="height: 390px;">
+        <p id="descriptionContent" style="margin-left: 10px; margin-right: 10px;">
+            <h2>Watershed Restoration Projects in Oregon</h2>
+            This interactive web map displays different watershed restoration projects that are currently underway or have been recently completed in the state of Oregon. Watershed restoration projects vary widely in size and scope, including, but not limited to: improving water quality, restoring fish and wildlife habitats, and repairing floodplain connectivity. Many projects target dams to create improvements for salmon migration, involving the addition of fish ladders or demolishing the dam entirely. The map provides additional information on major projects through use of the menu on the right side of the page. Data and information for project descriptions for this map are sourced from the Oregon Watershed Restoration Inventory (OWRI). <a href="https://oregonexplorer.info/content/enhancing-watersheds-oregon?topic=56&ptopic=38#TheOWRIDatabaseandGISdata">Data Source</a>
+        </p>
+    </div>
+    
+    <!--  Div for fly to buttons -->
+    <div id="fly-buttons">
+        <button class='fly' id='SavageRapidsButton'>Savage Rapids Dam</button>
+        <button class='fly' id='OpalSpringsButton'>Opal Springs Fish Passage</button>
+        <button class='fly' id='ChiloquinButton'>Chiloquin Dam</button>
+        <button class='fly' id='GoldRayButton'>Gold Ray Dam</button>
+        <button class='fly' id='TeninoButton'>Tenino-Umatilla Fish Passage</button>
+        <button class='fly' id='WilliamsonButton'>Williamson River Delta</button>
+        <button class='fly' id='DiamondLakeButton'>Diamond Lake Restoration</button>
+        <button class='fly' id='ChinaCampButton'>China Camp Creek</button>
+    </div>
+    
+    <!--  Div for map view selector, with regular view selected by default -->
+    <div id="menu">
+        <input id="clx0xczeb019y01rb4k8v2ptq" type="radio" name="rtoggle" value="satellite" checked="checked">
+        <label for="clx0xczeb019y01rb4k8v2ptq">regular view</label>
+        <input id="clx10wfvb01mm01rd6nzhc3y3" type="radio" name="rtoggle" value="light">
+        <label for="clx10wfvb01mm01rd6nzhc3y3">satellite view</label>
+    </div>
+
+    <!-- Div for back button -->
+    <div class="backPanel" id="backPanel">
+        <button id="backButton">&#8592; Back</button>
+    </div>
+
+    <script>
+        // Mapbox access 
+        mapboxgl.accessToken = 'pk.eyJ1IjoiYnJhbnN0ZW5iIiwiYSI6ImNsdXJtMmRhNjAyeWsya29pN3VqczY3OTkifQ.BeJENJf2VIYlgNdN7G0FPw';
+
+        // Map initialization starting with streets style, centered/zoomed to show all of Oregon.
+        const map = new mapboxgl.Map({
+            container: 'map', 
+            style: 'mapbox://styles/branstenb/clx0xczeb019y01rb4k8v2ptq', 
+            center: [-120.5542, 44], 
+            zoom: 6.2,
+            maxZoom: 17,
+            minZoom: 5,
+             maxBounds: [
+        [-129, 39], // These bounds prevent the user from panning away such that oregon is no longer visible. 
+        [-112, 49]  
+    ]
+        });
+        
+        // allows for clicking map view buttons to change style
+        const layerList = document.getElementById('menu');
+        const inputs = layerList.getElementsByTagName('input');
+
+        for (const input of inputs) {
+            input.onclick = (layer) => {
+                const layerId = layer.target.id;
+                map.setStyle('mapbox://styles/branstenb/' + layerId); //Allows for pulling map style from two different custom mapbox styles
+            };
+        }
+
+        //  Map markers for selected locations
+        // Marker 1 - savage rapids
+        var marker1 = new mapboxgl.Marker({
+            color: '#0c30b0'
+        })
+            .setLngLat([-123.229661, 42.420927])
+            .addTo(map);
+
+        // Marker 2 - opal springs
+        var marker2 = new mapboxgl.Marker({
+            color: '#0c30b0'
+        })
+            .setLngLat([-121.29814953, 44.48625675])
+            .addTo(map);
+
+        // Marker 3 - chiloquin
+        var marker3 = new mapboxgl.Marker({
+            color: '#0c30b0'
+        })
+            .setLngLat([-121.86196638, 42.56299063])
+            .addTo(map);
+
+        // Marker 4 - gold ray
+        var marker4 = new mapboxgl.Marker({
+            color: '#0c30b0'
+        })
+            .setLngLat([-122.98380026, 42.4360603])
+            .addTo(map);
+        //tenino
+        var marker5 = new mapboxgl.Marker({
+            color: '#0c30b0'
+        })
+            .setLngLat([-122.64325393, 45.46363308])
+            .addTo(map);
+        
+        //williamson river delta
+        var marker6 = new mapboxgl.Marker({
+            color: '#0c30b0'
+        })
+            .setLngLat([-121.9510747856823, 42.49132992877259])
+            .addTo(map);
+        
+        //diamond lake
+        var marker7 = new mapboxgl.Marker({
+            color: '#0c30b0'
+        })
+            .setLngLat([-122.14904842605725, 43.16186495315334])
+            .addTo(map);
+        
+        //china camp creek
+        var marker8 = new mapboxgl.Marker({
+            color: '#0c30b0'
+        })
+            .setLngLat([-124.25915457117738, 43.196749027439026])
+            .addTo(map);
+
+        
+        // This code block makes the markers only show up once you zoom in past level 10, so they are not clogging the map at the initial small scale view. When the zoom is changed, it checks to see if markers should be visible
+        var minZoom = 10;
+
+        function updateMarkerVisibility() {
+            if (map.getZoom() >= minZoom) {
+                marker1.getElement().style.display = 'block';
+                marker2.getElement().style.display = 'block';
+                marker3.getElement().style.display = 'block';
+                marker4.getElement().style.display = 'block';
+                marker5.getElement().style.display = 'block';
+                marker6.getElement().style.display = 'block';
+                marker7.getElement().style.display = 'block';
+                marker8.getElement().style.display = 'block';
+            } else {
+                marker1.getElement().style.display = 'none';
+                marker2.getElement().style.display = 'none';
+                marker3.getElement().style.display = 'none';
+                marker4.getElement().style.display = 'none';
+                marker5.getElement().style.display = 'none';
+                marker6.getElement().style.display = 'none';
+                marker7.getElement().style.display = 'none';
+                marker8.getElement().style.display = 'none';
+            }
+        }
+        updateMarkerVisibility();
+        map.on('zoom', updateMarkerVisibility);
+
+
+
+        // Function to update the description panel content
+        function updateDescription(content) {
+            var descriptionPanel = document.getElementById('descriptionPanel');
+            var descriptionContent = document.getElementById('descriptionContent');
+            descriptionContent.innerHTML = content;
+
+            // Delay so the broswer loads the image in the description panel properly, allowing panel to adjust to correct size
+            setTimeout(function () {
+                // Adjust the height of the description panel based on its content
+                var height = descriptionContent.offsetHeight + 20; 
+                descriptionPanel.style.height = height + 'px';
+            }, 500); 
+        }
+
+        // LISTENERS
+        // When menu buttons are clicked, flies to location and updates the description panel with a unique description and image
+        document.getElementById('SavageRapidsButton').addEventListener('click', function () {
+            map.flyTo({
+                center: [-123.229661, 42.420927],
+                zoom: 13,
+                duration: 2500
+            });
+            updateDescription('<h2>Savage Rapids Dam Removal (2006-2009)</h2>Savage Rapids Dam was a 39-foot tall, 500-foot long dam on the Rogue River in Josephine County. Constructed in 1921, the dam operated primarily for irrigation purposes, but was a major impediment to migrating salmon, despite the construction of fish ladders on both sides of the river. Beginning in the 1980s, controversy emerged concerning the dam, as environmentalists and sport fishers advocated for its removal, while local farmers sought to keep it intact. Replacing the dam with irrigation pumps satisfied both sides, and the removal project began in 2006. The project’s cost is listed at over $39 million.<br><img class="popupImage" alt="Heavy machinery being operated on site during the removal of the savage rapids dam" src="https://thumb.spokesman.com/Efq4z9646GMYwMubkspYFkwjlOM=/1200x0/media.spokesman.com/photos/2009/10/10/10_jump_Savage_Rapids_Dam_10-10-2009_C2H5M97.jpg"><br>Source: Associated Press/The Spokesman-Review, <a href="https://www.spokesman.com/stories/2009/oct/10/rogue-move-frees-river-after-88-years/">Article</a>');
+        });
+
+        document.getElementById('OpalSpringsButton').addEventListener('click', function () {
+            map.flyTo({
+                center: [-121.29814953, 44.48625675],
+                zoom: 15,
+                duration: 2500
+            });
+            updateDescription('<h2>Opal Springs Fish Passage Project (2018-2019)</h2>The construction of the Opal Springs Dam fish passage was a collaborative project between federal agencies, local tribes, non-governmental agencies, and community members to reestablish 125 miles of fish habitat in the upper Deschutes River sub-basin. The $13.3 million project began in 2018 and was completed by the following year, allowing adult and juvenile steelhead, chinook salmon, and bull trout to return to previously-inaccessible waterways through the installation of a single fish passage.<br><img class="popupImage" alt="View from above of opal springs dam and fish ladder" src="https://www.oregon.gov/oweb/data-reporting/HP/PublishingImages/opal-springs-216-8200-14049.jpg"><br>Source: Oregon Watershed Enhancement Board, <a href="https://www.oregon.gov/oweb/about-us/pages/highlighted-projects/opal%20springs.aspx/">Link</a>');
+        });
+        
+        document.getElementById('ChiloquinButton').addEventListener('click', function () {
+            map.flyTo({
+                center: [-121.86196638, 42.56299063],
+                zoom: 14,
+                duration: 2500
+            });
+            updateDescription('<h2>Chiloquin Dam Removal Project (2006-2009)</h2>Beginning in 2006 and completed in 2009, the Chiloquin Dam removal watershed restoration project involved the construction of off-channel watering sites for livestock, the development of better grazing management practices, and the mitigation of other agriculture-related issues. Along with the removal of the Chiloquin Dam, fish screens were installed on diversions, allowing several species of fish to access 80 miles of habitat.<br><img class="popupImage" alt="Chiloquin dam in winter, with two towers of red wood and snow along the water edge" src="https://bloximages.chicago2.vip.townnews.com/heraldandnews.com/content/tncms/assets/v3/editorial/c/37/c373f5fa-e8b0-52cb-8e59-ffadb4933e00/c373f5fa-e8b0-52cb-8e59-ffadb4933e00.image.jpg"><br>Source: Klamath Falls Herald and News, <a href="https://www.heraldandnews.com/news/local_news/district-weighs-dam-removal/article_344b4e9e-e335-501d-86dd-a629d6147cd8.html/">Article</a>');
+        });
+        
+        document.getElementById('GoldRayButton').addEventListener('click', function () {
+            map.flyTo({
+                center: [-122.98380026, 42.4360603],
+                zoom: 13,
+                duration: 2500
+            });
+            updateDescription('<h2>Gold Ray Dam Removal Project</h2>Constructed in 1904 by Colonel Frank Ray, then vice president of the American Tobacco Company, the Gold Ray Dam brought power to Ray’s gold mine and numerous surrounding towns in southern Oregon. Over time, power grids reduced the need for the dam’s electricity, and it stopped production in 1972. Years later,  it was recognized as an environmental problem, as large amounts of silt trapped by the dam could contain heavy metals and contaminants such as mercury, arsenic and pesticides. The $6.5 million removal project took place in 2010 and restored 333 miles of fish habitat for a variety of species.<br><img class="popupImage" alt="Black and white photograph of gold ray dam with surrounding buildings and railroad in foreground" src="https://www.oregonencyclopedia.org/media/uploads/Gold_Ray_Dam_1912.jpg"><br>Source: Oregon Encyclopedia, <a href="https://www.oregonencyclopedia.org/articles/gold_ray_dam/">Article</a>');
+        });
+
+        document.getElementById('TeninoButton').addEventListener('click', function () {
+            map.flyTo({
+                center: [-122.64325393, 45.46363308],
+                zoom: 13,
+                duration: 2500
+            });
+            updateDescription('<h2>Tenino-Umatilla Fish Passage Project</h2>In 2012, Portland Environmental Services and the U.S. Army Corps of Engineers replaced 2 culverts and removed 1 culvert from Crystal Springs Creek within the city of Portland. The presence of ESA listed species (endangered/threatened salmon and trout) in the creek was a major reason for the site’s selection. The project, which improved stream flow and fish passage and reduced potential for flooding, cost $1.25 million.<br><img class="popupImage" alt="Small concrete culvert under road with small stream in portland" src="https://www.portlandoregon.gov/shared/cfm/image.cfm?id=439667"><br>Source: City of Portland Environmental Services, <a href=https://www.portlandoregon.gov/bes/article/439214>Link</a>');
+        });
+        
+        document.getElementById('WilliamsonButton').addEventListener('click', function () {
+            map.flyTo({
+                center: [-121.9510747856823, 42.49132992877259],
+                zoom: 13,
+                duration: 2500
+            });
+            updateDescription('<h2>Williamson River Delta Restoration Project</h2>This project, conducted from 2006 to 2008, aimed to improve stream rearing habitat, increase the storage capacity of the wetland, and connect the wetland to its adjacent natural area. 22 miles of levee had been constructed to drain the area for farming and ranching, disrupting the habitat and wetland connectivity. To repair this, the project targeted the previously drained area: 2,400 acres were returned to open water wetland of >6 feet deep, and 3,100 acres were returned to shrub wetland. The site was selected by the Upper Klamath Basin Working Group in order to provide habitat for two endangered fish, the Lost River sucker and shortnose sucker. The cost of the project was $9.7 million.<br><img class="popupImage" alt="Aerial view of the lush williamson river delta preserve with dark green water" src="https://www.conservationgateway.org/ConservationByGeography/NorthAmerica/UnitedStates/oregon/freshwater/PublishingImages/WRD_Tulana_RickMcEwan.jpg"><br>Source: Rick McEwan, Conservation Gateway <a href=https://www.conservationgateway.org/conservationbygeography/northamerica/unitedstates/oregon/freshwater/klamath/pages/williamson-river-delta-preserve.aspx>Link</a>');
+        });
+        
+        document.getElementById('DiamondLakeButton').addEventListener('click', function () {
+            map.flyTo({
+                center: [-122.14904842605725, 43.16186495315334],
+                zoom: 13,
+                duration: 2500
+            });
+            updateDescription('<h2>Diamond Lake Restoration Project</h2>This project, conducted from 2005 to 2007, aimed to revitalize the lake ecosystem and its recreational use. Diamond Lake had been suffering from poor water quality and frequent blue-green algae blooms due to the overpopulation of non-native Tui Chub fish. After a comprehensive Environmental Impact Statement process, the lake was treated with rotenone, a piscicide, in September 2006. The Tui Chub was successfully eradicated, allowing for the gradual restoration of the natural ecosystem. The cost of the project was $5.2 million.<br><img class="popupImage" alt="Numerous dead invasive tui chub floating on the surface of diamond lake" src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTcUif6TebB913JS4c-5JSWiqPoJ9kxtcn4VA&s"><br>Source: Joe Eilers, Oregon Department of Fish and Wildlife <a href=https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.dfw.state.or.us%2Ffish%2Flocal_fisheries%2Fdiamond_lake%2Fdocs%2Feilers.pdf&psig=AOvVaw3xlsr0KQodAcyje22eBldP&ust=1717890539895000&source=images&cd=vfe&opi=89978449&ved=0CBQQjhxqFwoTCNjd0IzXyoYDFQAAAAAdAAAAABAk">Link</a>');
+        });
+        
+        document.getElementById('ChinaCampButton').addEventListener('click', function () {
+            map.flyTo({
+                center: [-124.25915457117738, 43.196749027439026],
+                zoom: 13,
+                duration: 2500
+            });
+            updateDescription('<h2>China Camp Creek Restoration Project</h2>This project, spanning from 2017 to 2020, focused on enhancing fish passage and improving the estuarine environment. This multi-faceted project involved replacing outdated culverts and tide gates with modern bridges, modifying channels, and removing barriers to restore estuarine connections. It addressed a variety of objectives such as fish access, habitat enhancement, and water management for drainage and irrigation. Across 1,700 acres, the project improved fish passage for four road/stream crossings, providing access to 12 miles of previously inaccessible habitat. Key species benefiting from this project include Coho Salmon, Steelhead, Chinook Salmon, Cutthroat Trout, and a variety of other fish, birds, and mammals. The project successfully decreased stream temperatures, improved floodplain interactions, enhanced off-channel and overwinter habitats, increased native vegetation for future shading, and boosted water quality and wildlife habitat.<br><img class="popupImage" alt="Small gravel and concrete barrier at china camp creek, with blue sky reflecting off the water" src="https://bloximages.chicago2.vip.townnews.com/theworldlink.com/content/tncms/assets/v3/editorial/0/49/049205fd-9ed8-59f8-a1a5-c0b69e3d7210/59f09b7b05ef8.image.jpg?resize=753%2C500"><br>Source: Saphara Harrell, The World Newspaper <a href=https://theworldlink.com/bandon/news/china-camp-creek-project-is-now-complete/article_3f24fcc1-981e-544b-b96a-e018a329e9b3.html>Link</a>');
+        });
+
+        // Listener for back button
+        document.getElementById('backButton').addEventListener('click', function () {
+            // Reset the map view to the original zoom and extent
+            map.flyTo({
+                center: [-120.5542, 44],
+                zoom: 6.2,
+                duration: 500
+            });
+
+            // Switches description panel to original content and size
+            updateDescription('<h2>Watershed Restoration Projects in Oregon</h2>This interactive web map displays different watershed restoration projects that are currently underway or have been recently completed in the state of Oregon. Watershed restoration projects vary widely in size and scope, including, but not limited to: improving water quality, restoring fish and wildlife habitats, and repairing floodplain connectivity. Many projects target dams to create improvements for salmon migration, involving the addition of fish ladders or demolishing the dam entirely. The map provides additional information on major projects through use of the menu on the right side of the page. Data for this map is provided by the Oregon Watershed Restoration Inventory (OWRI).');
+
+            var descriptionPanel = document.getElementById('descriptionPanel');
+            descriptionPanel.style.height = '40px'; 
+        });
+    </script>
+
+</body>
+
+</html>
